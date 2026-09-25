@@ -4,29 +4,29 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# uv, version épinglée ; il utilise le Python de l'image (pas de téléchargement)
+COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /uvx /bin/
+ENV UV_PYTHON_DOWNLOADS=never UV_LINK_MODE=copy UV_NO_CACHE=1
 
-# Fichiers source Python (structure plate, pas de sous-dossier app/)
-COPY main.py ./
-COPY sondage_loader.py survey_loader_from_xlsx.py summaries_generator_daemon.py ./
+# Dépendances seules d'abord, depuis le lockfile : cette couche reste en cache
+# tant que pyproject.toml et uv.lock ne changent pas
+COPY pyproject.toml uv.lock .python-version ./
+RUN uv sync --locked --no-install-project
 
-# Répertoires applicatifs
-COPY ./core core
-COPY ./models models
-COPY ./routers routers
-COPY ./services services
-COPY ./templates templates
-COPY ./static static
-COPY ./import import
+# Le paquet oceens (code, templates, static, import) puis son installation.
+# Installé en mode éditable depuis /app/src : la racine du projet reste /app,
+# donc la base par défaut reste /app/database même si LOCAL_DATABASE_DIR est
+# vide (le .env passé par docker compose l'écrase).
+COPY ./src src
+RUN uv sync --locked
 
-ENV PYTHONUNBUFFERED=1
-
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Le répertoire database/ est créé automatiquement par database.py au démarrage.
 # Monter /app/database comme volume pour persister la base SQLite entre les redémarrages.
+ENV LOCAL_DATABASE_DIR=/app/database
 # Le fichier .env ne doit PAS être copié dans l'image : fournir les secrets via
 # --env-file .env au lancement (docker run) ou via les variables d'environnement.
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+# Point d'entrée installé : uvicorn oceens.main:app sur 0.0.0.0:8000
+CMD ["oceens"]
