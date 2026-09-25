@@ -68,6 +68,7 @@ uv run python scripts/check_cycles.py
 A clean exit means every import in the repo goes through a public surface. A
 violation names the offending import, so there is nothing to hunt for.
 
-The tests at the repo root are code outside every package, so the same rule
-forces them through the public surfaces too. A passing suite is evidence the
-interfaces are usable.
+The repository has no tests yet (#85). Once they exist in a `tests/` folder at
+the repo root, they will be code outside every package, so the same rule will
+force them through the public surfaces too, and a passing suite will be
+evidence the interfaces are usable.
