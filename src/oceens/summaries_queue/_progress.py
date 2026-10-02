@@ -14,7 +14,7 @@ _DONE = 200
 
 # Durée d'un job, en secondes : B du Design Document v1 (EPF-MDE/OceENS#122),
 # mesurée le 25 septembre 2026. Constante : ni mesure en direct, ni horloge.
-_SECONDS_PER_JOB = 20
+_SECONDS_PER_JOB = 10
 
 
 class SummariesQueueUnavailable(Exception):
