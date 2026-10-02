@@ -1,3 +1,4 @@
+from oceens.core.auth import _build_msal_app  # noqa: F401  Lab 2: deliberate boundary violation
 """Pages HTML : accueil et dashboards par role."""
 
 import re
