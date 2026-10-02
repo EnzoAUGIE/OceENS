@@ -331,16 +331,16 @@
 
     {% if can_generate_summaries and survey['submissions_count'] > 0 %}
     {% if survey['is_generating'] %}
-    {% set survey_summaries = summaries.get(survey['survey_id'], {}) %}
-    {% set summaries_count = survey_summaries.get('summaries_count', 0) %}
-    {% set summaries_done = survey_summaries.get('summaries_done', 0) %}
-    {% set summaries_error = survey_summaries.get('summaries_error', 0) %}
-    {% if summaries_count > 0 and summaries_count == summaries_done + summaries_error %}
+    {% set queue = summaries.get(survey['survey_id']) %}
+    {% set summaries_count = queue.total if queue else 0 %}
+    {% set summaries_done = queue.done if queue else 0 %}
+    {% set summaries_error = queue.error if queue else 0 %}
+    {% if queue and queue.finished %}
     <button class="row-icon row-icon-summaries row-icon-summaries-done"
       title="Génération des résumés terminée : {{ summaries_done }}/{{ summaries_count }} ({{ summaries_error }} erreur(s))">🤖</button>
     {% else %}
     <button class="row-icon row-icon-summaries row-icon-summaries-processing" onclick="window.location.reload();"
-      title="Génération des résumés en cours : {{ summaries_done }}/{{ summaries_count }} ({{ summaries_error }} erreur(s))">🤖</button>
+      title="Génération des résumés en cours : {{ summaries_done }}/{{ summaries_count }} ({{ summaries_error }} erreur(s)){% if queue and queue.pending %} — temps estimé : {% if queue.estimated_seconds >= 3600 %}{{ queue.estimated_seconds // 3600 }} h {{ '%02d' % ((queue.estimated_seconds % 3600) // 60) }}{% else %}{{ (queue.estimated_seconds + 59) // 60 }} min{% endif %}{% endif %}">🤖</button>
     {% endif %}
     <form method="post" action="/api/surveys/{{ survey['survey_id'] }}/destroy-summaries" class="destroy-summaries"
       onsubmit="return confirm('Supprimer définitivement les résumés déjà générés ? Cette action est irréversible.');">
@@ -360,7 +360,8 @@
        synthèse générée : avant, il n'y a rien à facturer et le bouton
        n'afficherait qu'un zéro trompeur. #}
     {% if can_generate_summaries %}
-    {% set survey_done = summaries.get(survey['survey_id'], {}).get('summaries_done', 0) %}
+    {% set survey_queue = summaries.get(survey['survey_id']) %}
+    {% set survey_done = survey_queue.done if survey_queue else 0 %}
     {% if survey_done > 0 %}
     <button type="button" class="row-icon row-icon-cost" title="Coût des synthèses de ce sondage"
       aria-label="Coût des synthèses de ce sondage"
